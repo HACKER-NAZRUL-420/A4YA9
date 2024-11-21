@@ -3,11 +3,11 @@ module.exports = {
     name: "pp",
     aliases: ["pfp", "pp"],
     version: "1.1",
-    author: "ARYAN",
+    author: "Nazrul",
     countDown: 5,
     role: 0,
-    shortDescription: "PROFILE image",
-    longDescription: "PROFILE image",
+    shortDescription: "No Prefix",
+    longDescription: "No Prefix",
     category: "image",
     guide: {
       en: "   {pn} @tag"
