@@ -1,57 +1,59 @@
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
+const axios = require('axios');
+const path = require('path');
+const fs = require('fs-extra');
  
 module.exports = {
   config: {
     name: "imagine",
-    aliases: [],
-    author: "Mahi--",
+    aliases: ["imagine"],
     version: "1.0",
-    cooldowns: 20,
+    author: "Vex_Kshitiz",
+    countDown: 50,
     role: 0,
-    shortDescription: "Generate an image based on a prompt.",
-    longDescription: "Generates an image using the provided prompt.",
-    category: "fun",
-    guide: "{p}imagine <prompt>",
+    longDescription: {
+      vi: '',
+      en: "Imagine"
+    },
+    category: "ai",
+    guide: {
+      vi: '',
+      en: "{pn} <prompt> - <ratio>"
+    }
   },
-  onStart: async function ({ message, args, api, event }) {
-    // Obfuscated author name check
-    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 105, 45, 45);
-    if (this.config.author !== obfuscatedAuthor) {
-      return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
-    }
  
-    const prompt = args.join(" ");
- 
-    if (!prompt) {
-      return api.sendMessage("❌ | You need to provide a prompt.", event.threadID);
-    }
- 
-    api.sendMessage("Please wait, we're making your picture...", event.threadID, event.messageID);
- 
+  onStart: async function ({ api, commandName, event, args }) {
     try {
-      const imagineApiUrl = `https://www.samirxpikachu.run.place/imagine?prompt=${encodeURIComponent(prompt)}`;
+      api.setMessageReaction("✅", event.messageID, (a) => {}, true);
+      let prompt = args.join(' ');
+      let ratio = '1:1';
  
-      const imagineResponse = await axios.get(imagineApiUrl, {
-        responseType: "arraybuffer"
-      });
- 
-      const cacheFolderPath = path.join(__dirname, "cache");
-      if (!fs.existsSync(cacheFolderPath)) {
-        fs.mkdirSync(cacheFolderPath);
+      if (args.length > 0 && args.includes('-')) {
+        const parts = args.join(' ').split('-').map(part => part.trim());
+        if (parts.length === 2) {
+          prompt = parts[0];
+          ratio = parts[1];
+        }
       }
-      const imagePath = path.join(cacheFolderPath, `${Date.now()}_generated_image.png`);
-      fs.writeFileSync(imagePath, Buffer.from(imagineResponse.data, "binary"));
  
-      const stream = fs.createReadStream(imagePath);
-      message.reply({
-        body: "",
-        attachment: stream
-      });
+      const response = await axios.get(`https://imagine-kshitiz-nsj3.onrender.com/mj?prompt=${encodeURIComponent(prompt)}&ratio=${encodeURIComponent(ratio)}`);
+      const imageUrls = response.data.imageUrls;
+ 
+      const imgData = [];
+      const numberOfImages = 4;
+ 
+      for (let i = 0; i < Math.min(numberOfImages, imageUrls.length); i++) {
+        const imageUrl = imageUrls[i];
+        const imgResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const imgPath = path.join(__dirname, 'cache', `${i + 1}.jpg`);
+        await fs.outputFile(imgPath, imgResponse.data);
+        imgData.push(fs.createReadStream(imgPath));
+      }
+ 
+      await api.sendMessage({ body: '', attachment: imgData }, event.threadID, event.messageID);
     } catch (error) {
       console.error("Error:", error);
-      message.reply("❌ | An error occurred. Please try again later.");
+      api.sendMessage("error contact kshitiz", event.threadID, event.messageID);
     }
   }
 };
+ 
